@@ -1,0 +1,56 @@
+# Leagues use The Odds API sport keys; history_code maps to football-data.co.uk file codes.
+leagues:
+  - key: soccer_epl
+    history_code: E0
+  - key: soccer_spain_la_liga
+    history_code: SP1
+  - key: soccer_germany_bundesliga
+    history_code: D1
+  - key: soccer_italy_serie_a
+    history_code: I1
+  - key: soccer_france_ligue_one
+    history_code: F1
+  # FIFA World Cup 2026 — national teams. The Odds API sport key is soccer_fifa_world_cup
+  # (verify on GET /v4/sports while the tournament is live). Fitting data comes from the
+  # martj42/international_results dataset (no corners), so corners are auto-disabled here.
+  - key: soccer_fifa_world_cup
+    history_code: WC
+    history_source: international
+    model_group: international
+
+markets: [h2h, totals_goals, totals_corners]   # h2h = 1X2
+books: []          # empty = accept all books returned by the API
+ev_threshold: 0.0  # keep selections with EV strictly greater than this
+devig_method: proportional   # proportional | shin | power
+consensus: average           # average | best  (which fair_prob to compare against)
+blend_weight: 0.5            # 1.0 = pure model, 0.0 = pure market; tune via `clv-backtest`
+calibrate_enabled: false     # opt-in isotonic calibration of the final probability
+calibrate_min_samples: 50    # don't fit a calibrator on fewer holdout points than this
+starting_bankroll: 100.0     # units, for bankroll curve + risk-of-ruin reports
+
+# Phase 2 — automation
+alert_min_ev: 0.05           # only push alerts for bets with EV at/above this (5%)
+schedule_daily_hour: 9       # in-process scheduler: hour to run the daily cycle
+schedule_closing_hour: 18    # hour to capture closing odds (set near your kickoffs)
+goals_lines: [2.5]
+corners_lines: [9.5, 10.5]
+max_goals: 10
+max_corners: 20
+time_decay_xi: 0.0018        # per-day decay for MLE weighting
+kelly_fraction: 0.0          # 0 = flat stake; >0 = fractional Kelly
+flat_stake: 1.0
+cache_ttl_seconds: 3600
+clv_reliable_min: 150
+db_path: storage/value_bets.db
+cache_dir: .cache
+reports_dir: reports_output
+cors_origin: http://localhost:3000
+
+# LLM plain-language explanations for each value bet. Optional: with no API key the
+# system falls back to a deterministic local template (works offline / in dry-run).
+# Default provider is Groq (free, OpenAI-compatible). To use OpenRouter instead, set
+# llm_base_url: https://openrouter.ai/api/v1 and an llm_model it serves.
+llm_enabled: true
+llm_provider: groq
+llm_model: llama-3.1-8b-instant
+llm_base_url: https://api.groq.com/openai/v1
