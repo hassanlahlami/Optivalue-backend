@@ -6,7 +6,7 @@ import sqlite3
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS matches (
   match_id TEXT PRIMARY KEY, league TEXT, home TEXT, away TEXT,
-  kickoff_utc TEXT, status TEXT
+  kickoff_utc TEXT, status TEXT, weather TEXT
 );
 CREATE TABLE IF NOT EXISTS odds_snapshots (
   id INTEGER PRIMARY KEY AUTOINCREMENT, match_id TEXT, market TEXT,
@@ -47,4 +47,7 @@ def migrate(conn: sqlite3.Connection) -> None:
     cols = {r["name"] for r in conn.execute("PRAGMA table_info(bets)")}
     if "explanation" not in cols:
         conn.execute("ALTER TABLE bets ADD COLUMN explanation TEXT")
+    mcols = {r["name"] for r in conn.execute("PRAGMA table_info(matches)")}
+    if "weather" not in mcols:
+        conn.execute("ALTER TABLE matches ADD COLUMN weather TEXT")
     conn.commit()

@@ -16,6 +16,7 @@ from model.dixon_coles import DixonColesModel
 from model.corners import CornersPoissonModel
 from model.blend import blend_probs
 from model.calibrate import IsotonicCalibrator
+from model.registry import build_goals, build_corners
 from model import markets as mk
 from storage.repositories import MatchRepo, OddsRepo, BetRepo
 
@@ -42,7 +43,7 @@ def _fit_goals_calibrator(history: pd.DataFrame, settings):
     if n - cut < 1:
         return None
     train, test = df.iloc[:cut], df.iloc[cut:]
-    model = DixonColesModel(max_goals=settings.max_goals, xi=settings.time_decay_xi)
+    model = build_goals(settings.goals_model, settings)
     model.fit(train)
     probs, hits = [], []
     for _, r in test.iterrows():
@@ -93,8 +94,12 @@ def fit_models(results_client, settings) -> ModelBundle:
         history = pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
         if history.empty:
             continue
-        g = DixonColesModel(max_goals=settings.max_goals, xi=settings.time_decay_xi)
+        g = build_goals(settings.goals_model, settings)
         g.fit(history)
+        # International fixtures (World Cup) are mostly neutral-venue: a venue-aware model
+        # should predict with home advantage switched off for that group.
+        if group == "international" and hasattr(g, "default_neutral"):
+            g.default_neutral = True
         goals[group] = g
         cal = _fit_goals_calibrator(history, settings)
         if cal is not None:
@@ -102,7 +107,7 @@ def fit_models(results_client, settings) -> ModelBundle:
         # Corners only where the source carries corner counts (club leagues); the
         # international group has no HC/AC, so corner markets are auto-disabled there.
         if {"HC", "AC"} <= set(history.columns):
-            c = CornersPoissonModel(max_corners=settings.max_corners, xi=settings.time_decay_xi)
+            c = build_corners(settings.corners_model, settings)
             c.fit(history)
             corners[group] = c
     return ModelBundle(goals=goals, corners=corners, calibrators=calibrators)

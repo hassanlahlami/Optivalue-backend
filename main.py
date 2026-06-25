@@ -19,6 +19,7 @@ from sources.odds_theoddsapi import TheOddsAPIClient
 from sources.results_footballdata_couk import FootballDataCoUkClient
 from sources.results_international import InternationalResultsClient
 from sources.results_composite import CompositeResultsClient
+from sources.xg_understat import UnderstatClient
 from pipeline.run import fit_models, run_daily
 from pipeline.clv import record_closing, compute_clv
 from pipeline.alerts import notify_value_bets
@@ -35,18 +36,21 @@ def build_sources(settings, dry_run: bool):
     # national teams -> the international results dataset.
     results = CompositeResultsClient(
         {"footballdata_couk": FootballDataCoUkClient(settings.cache_dir),
-         "international": InternationalResultsClient(settings.cache_dir)},
+         "international": InternationalResultsClient(settings.cache_dir),
+         "understat": UnderstatClient(settings.cache_dir)},
         settings.leagues)
     return odds, results
 
 def _today() -> str:
     return dt.date.today().isoformat()
 
-def _load_history(results, settings):
-    """Concatenate every league's historical results (for settlement / result lookup)."""
+def _load_history(results, settings, club_only: bool = False):
+    """Concatenate league histories (all leagues, or just the club group for goals-model work)."""
     import pandas as pd
     frames = []
     for lg in settings.leagues:
+        if club_only and lg.model_group != "club":
+            continue
         try:
             frames.append(results.fetch_history(lg.history_code))
         except Exception as exc:  # noqa: BLE001
@@ -70,7 +74,9 @@ def main(argv: list[str] | None = None) -> int:
     cb.add_argument("--dry-run", action="store_true")
     cb.add_argument("--train-frac", type=float, default=0.7)
     cb.add_argument("--folds", type=int, default=1)  # >1 = walk-forward
+    sub.add_parser("compare-models").add_argument("--dry-run", action="store_true")
     sub.add_parser("settle").add_argument("--dry-run", action="store_true")
+    sub.add_parser("fetch-weather").add_argument("--date", default=None)
     sub.add_parser("bankroll")
     cy = sub.add_parser("cycle")  # one full daily cycle: run-daily -> fetch-closing -> settle
     cy.add_argument("--dry-run", action="store_true")
@@ -171,6 +177,12 @@ def main(argv: list[str] | None = None) -> int:
             print(f"Settled {s['settled']} bets | {s['wins']} wins | "
                   f"P/L {s['pnl']:+.2f}u | ROI {s['roi'] * 100:+.1f}% (P/L is secondary to CLV)")
             return 0
+        if args.cmd == "fetch-weather":
+            from pipeline.weather import update_weather
+            from sources.weather_openmeteo import OpenMeteoClient
+            n = update_weather(conn, OpenMeteoClient(settings.cache_dir), args.date or _today())
+            print(f"Updated weather for {n} matches.")
+            return 0
         if args.cmd == "bankroll":
             from storage.repositories import SettlementRepo, BetRepo
             from pipeline.bankroll import bankroll_curve, monte_carlo_risk
@@ -195,8 +207,24 @@ def main(argv: list[str] | None = None) -> int:
             notify_value_bets(flagged, settings)
             record_closing(odds, conn, settings, date)
             s = settle_bets(conn, results_from_history(_load_history(results, settings)), settings)
+            if not args.dry_run:  # weather is a live API; keep --dry-run fully offline
+                from pipeline.weather import update_weather
+                from sources.weather_openmeteo import OpenMeteoClient
+                update_weather(conn, OpenMeteoClient(settings.cache_dir), date)
             render_clv(compute_clv(conn, settings), settings.reports_dir)
             print(f"Cycle complete: {len(flagged)} flagged, {s['settled']} settled.")
+            return 0
+        if args.cmd == "compare-models":
+            from model.registry import compare_models
+            _, results = build_sources(settings, args.dry_run)
+            ranked = compare_models(_load_history(results, settings, club_only=True), settings)
+            print("Model comparison (out-of-sample, lower Brier = better):")
+            for r in ranked:
+                if r.get("sample_size", 0) == 0:
+                    print(f"  {r['model']}: {r.get('note', 'no result')}")
+                else:
+                    print(f"  {r['model']}: Brier {r['brier']:.4f} | log-loss {r['log_loss']:.4f} "
+                          f"| baseline {r['baseline_brier']:.4f} | n={r['sample_size']}")
             return 0
         if args.cmd == "schedule":
             from scheduler import run_scheduler

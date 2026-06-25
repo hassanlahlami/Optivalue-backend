@@ -52,6 +52,14 @@ Each league has a `history_source` (`footballdata_couk` for club leagues, `inter
 for national teams) and a `model_group`. Leagues in the same `model_group` share one fitted
 Dixon-Coles model; club and international teams are kept in separate groups.
 
+### xG via Understat (compliant scraping)
+Set a league's `history_source: understat` to fit the goals model on real expected goals (use
+`goals_model: xg_dixon_coles`). The Understat client (`sources/xg_understat.py`) scrapes the page's
+embedded match JSON through `scrape_base.py`, which **checks robots.txt, sets an honest User-Agent,
+rate-limits, and caches**. It does NOT defeat anti-bot protections. Understat has no formal API and
+gray-area ToS — this is for personal, cached, rate-limited research; respect their Terms. Licensed
+sources (FBref/WhoScored) prohibit scraping and are intentionally not used.
+
 ### National teams / World Cup 2026
 `soccer_fifa_world_cup` is configured with `history_source: international` and
 `model_group: international`. Fitting data comes from the free martj42/international_results

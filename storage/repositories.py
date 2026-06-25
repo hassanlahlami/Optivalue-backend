@@ -20,6 +20,9 @@ class MatchRepo:
         cur = self.conn.execute("SELECT * FROM matches WHERE match_id=?", (match_id,))
         row = cur.fetchone()
         return dict(row) if row else None
+    def set_weather(self, match_id: str, weather: str) -> None:
+        self.conn.execute("UPDATE matches SET weather=? WHERE match_id=?", (weather, match_id))
+        self.conn.commit()
 
 class OddsRepo:
     def __init__(self, conn: sqlite3.Connection) -> None:
@@ -61,7 +64,7 @@ class BetRepo:
         # (the best line-shopped price we recorded for the selection).
         q = ("SELECT b.*, b.taken_odds AS best_odds, "
              "m.home AS home, m.away AS away, m.kickoff_utc AS kickoff_utc, "
-             "m.league AS match_league "
+             "m.league AS match_league, m.weather AS weather "
              "FROM bets b LEFT JOIN matches m ON b.match_id = m.match_id")
         clauses, params = [], []
         if status:

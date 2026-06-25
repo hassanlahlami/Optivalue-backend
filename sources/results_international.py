@@ -70,4 +70,8 @@ class InternationalResultsClient(BaseResultsClient):
         df = df[df["Date"] >= f"{self.since_year}-01-01"]
         for col in ("HomeTeam", "AwayTeam"):
             df[col] = df[col].replace(TEAM_ALIASES)
-        return df[["Date", "HomeTeam", "AwayTeam", "FTHG", "FTAG"]].reset_index(drop=True)
+        # Keep the `neutral` flag (most World Cup games) so the venue-aware model can use it.
+        cols = ["Date", "HomeTeam", "AwayTeam", "FTHG", "FTAG"]
+        if "neutral" in df.columns:
+            cols.append("neutral")
+        return df[cols].reset_index(drop=True)

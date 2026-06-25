@@ -45,6 +45,9 @@ class Settings:
     llm_model: str
     llm_base_url: str
     llm_api_key: str | None
+    # Which goals/corners models the live pipeline fits. Compare goals with `compare-models`.
+    goals_model: str
+    corners_model: str
     # Final prob = blend_weight*model + (1-blend_weight)*de-vigged market. 1.0 = pure model,
     # 0.0 = pure market. Tune with `python main.py clv-backtest` and set the best value here.
     blend_weight: float
@@ -93,6 +96,8 @@ def load_settings(path: str = "settings.yaml") -> Settings:
         llm_model=str(raw.get("llm_model", "llama-3.1-8b-instant")),
         llm_base_url=str(raw.get("llm_base_url", "https://api.groq.com/openai/v1")),
         llm_api_key=os.getenv("LLM_API_KEY") or os.getenv("GROQ_API_KEY") or None,
+        goals_model=str(raw.get("goals_model", "dixon_coles")),
+        corners_model=str(raw.get("corners_model", "poisson")),
         blend_weight=float(raw.get("blend_weight", 0.5)),
         calibrate_enabled=bool(raw.get("calibrate_enabled", False)),
         calibrate_min_samples=int(raw.get("calibrate_min_samples", 50)),

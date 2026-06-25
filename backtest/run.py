@@ -18,7 +18,8 @@ def _outcome(hg: int, ag: int) -> str:
     return "home" if hg > ag else "away" if ag > hg else "draw"
 
 
-def holdout_backtest(history: pd.DataFrame, settings, train_frac: float = 0.7) -> dict:
+def holdout_backtest(history: pd.DataFrame, settings, train_frac: float = 0.7,
+                     model_factory=None) -> dict:
     df = history.copy()
     df["Date"] = pd.to_datetime(df["Date"], dayfirst=True, errors="coerce")
     df = df.dropna(subset=["Date", "HomeTeam", "AwayTeam", "FTHG", "FTAG"]).sort_values("Date")
@@ -29,7 +30,10 @@ def holdout_backtest(history: pd.DataFrame, settings, train_frac: float = 0.7) -
     cut = max(1, int(n * train_frac))
     train, test = df.iloc[:cut], df.iloc[cut:]
 
-    model = DixonColesModel(max_goals=settings.max_goals, xi=settings.time_decay_xi)
+    if model_factory is None:
+        model = DixonColesModel(max_goals=settings.max_goals, xi=settings.time_decay_xi)
+    else:
+        model = model_factory(settings)
     model.fit(train)
 
     # NAIVE base-rate baseline from the training split.
