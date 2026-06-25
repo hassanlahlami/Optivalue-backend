@@ -75,6 +75,7 @@ def main(argv: list[str] | None = None) -> int:
     cb.add_argument("--train-frac", type=float, default=0.7)
     cb.add_argument("--folds", type=int, default=1)  # >1 = walk-forward
     sub.add_parser("compare-models").add_argument("--dry-run", action="store_true")
+    sub.add_parser("data-health").add_argument("--dry-run", action="store_true")
     sub.add_parser("settle").add_argument("--dry-run", action="store_true")
     sub.add_parser("fetch-weather").add_argument("--date", default=None)
     sub.add_parser("bankroll")
@@ -213,6 +214,22 @@ def main(argv: list[str] | None = None) -> int:
                 update_weather(conn, OpenMeteoClient(settings.cache_dir), date)
             render_clv(compute_clv(conn, settings), settings.reports_dir)
             print(f"Cycle complete: {len(flagged)} flagged, {s['settled']} settled.")
+            return 0
+        if args.cmd == "data-health":
+            from sources.canonical import validate_history
+            _, results = build_sources(settings, args.dry_run)
+            print("Data health by league (source -> validation):")
+            for lg in settings.leagues:
+                try:
+                    rep = validate_history(results.fetch_history(lg.history_code))
+                except Exception as exc:  # noqa: BLE001
+                    print(f"  {lg.key} [{lg.history_source}]: FETCH FAILED ({exc})")
+                    continue
+                has = [k.split("_")[1] for k in ("has_xg", "has_corners", "has_closing_odds")
+                       if rep[k]]
+                status = "OK" if rep["ok"] else f"ISSUES missing={rep['missing_columns']}"
+                print(f"  {lg.key} [{lg.history_source}]: {rep['rows']} rows, "
+                      f"{rep['unusable_rows']} unusable | {status} | has: {','.join(has) or 'none'}")
             return 0
         if args.cmd == "compare-models":
             from model.registry import compare_models

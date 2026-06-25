@@ -5,12 +5,17 @@ log-loss (and, once the CLV backtest is wired, raises CLV). The model should als
 base-rate baseline — if it doesn't, it has no skill.
 """
 from __future__ import annotations
+import json
 import os
 
 
 def render(metrics: dict, reports_dir: str) -> str:
     os.makedirs(reports_dir, exist_ok=True)
     path = os.path.join(reports_dir, "model_report_card.html")
+    # Persist the metrics as JSON too, so the API can serve the report card without
+    # re-running a (heavy) backtest inside a request.
+    with open(os.path.join(reports_dir, "model_report_card.json"), "w", encoding="utf-8") as fh:
+        json.dump(metrics, fh)
 
     if metrics.get("sample_size", 0) == 0:
         note = metrics.get("note", "no testable matches")

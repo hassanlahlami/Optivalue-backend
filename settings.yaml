@@ -18,11 +18,12 @@ leagues:
     history_source: international
     model_group: international
 
-markets: [h2h, totals_goals, totals_corners]   # h2h = 1X2
+markets: [h2h, totals_goals, totals_corners, btts]   # h2h = 1X2; btts = both teams to score
 books: []          # empty = accept all books returned by the API
+sharp_books: [pinnacle, betfair_ex_uk, betfair_ex_eu, betfair]  # fair-line anchors for consensus: sharp
 ev_threshold: 0.0  # keep selections with EV strictly greater than this
 devig_method: proportional   # proportional | shin | power
-consensus: average           # average | best  (which fair_prob to compare against)
+consensus: average           # average | best | sharp  (which fair_prob to compare against)
 goals_model: dixon_coles     # dixon_coles | bivariate_poisson | venue_dixon_coles | xg_dixon_coles
 corners_model: poisson       # poisson | negbin (negative-binomial handles corner overdispersion)
 blend_weight: 0.5            # 1.0 = pure model, 0.0 = pure market; tune via `clv-backtest`

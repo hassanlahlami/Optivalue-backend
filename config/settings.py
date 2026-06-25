@@ -21,6 +21,9 @@ class Settings:
     leagues: list[League]
     markets: list[str]
     books: list[str]
+    # Sharp books anchor the "fair" price (use with consensus: sharp). We still line-shop the
+    # best price across ALL books — sharp is only for estimating the true probability.
+    sharp_books: list[str]
     ev_threshold: float
     devig_method: str
     consensus: str
@@ -73,6 +76,8 @@ def load_settings(path: str = "settings.yaml") -> Settings:
         leagues=leagues,
         markets=list(raw["markets"]),
         books=list(raw.get("books", [])),
+        sharp_books=list(raw.get("sharp_books",
+                                 ["pinnacle", "betfair_ex_uk", "betfair_ex_eu", "betfair"])),
         ev_threshold=float(raw["ev_threshold"]),
         devig_method=str(raw["devig_method"]),
         consensus=str(raw["consensus"]),

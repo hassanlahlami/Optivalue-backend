@@ -131,6 +131,10 @@ def model_prob_for(bundle, group, home, away, market, selection, line, settings)
             M = goals.score_matrix(home, away)
             r = mk.over_under_total(M, float(line))
             return r["over"] if selection.lower() == "over" else r["under"]
+        if market == "btts":
+            M = goals.score_matrix(home, away)
+            r = mk.btts(M)
+            return r["yes"] if selection.lower() == "yes" else r["no"]
         if market == "totals_corners":
             corners = bundle.corners.get(group)
             if corners is None or not corners.attack:
@@ -158,14 +162,23 @@ def _consensus_fair_for(market_books: dict, sel_list: list[str], best: dict, set
     used for de-vig are mutually exclusive and consistent. We then combine across books:
       - consensus == "average" (default): mean of the per-book fair probs.
       - consensus == "best": the fair prob from the book offering the best price we'd take.
+      - consensus == "sharp": average over sharp books only (Pinnacle/Betfair) when they
+        cover the market — the sharpest estimate of the true probability.
     Falls back to de-vigging the best-price composite if no single book quotes the full
     set of outcomes (de-vig is only valid over a complete market).
 
     market_books: {book: {selection: decimal_odds}} for one (match, market, line).
     best:         {selection: (book, best_decimal_odds)} from line shopping.
     """
+    books = market_books
+    if settings.consensus == "sharp":
+        sharp = {b: q for b, q in market_books.items()
+                 if b in set(settings.sharp_books) and set(sel_list) <= set(q)}
+        if sharp:  # only restrict to sharp books if at least one covers the full market
+            books = sharp
+
     per_book: dict[str, list[tuple[str, float]]] = {s: [] for s in sel_list}
-    for book, quotes in market_books.items():
+    for book, quotes in books.items():
         if set(sel_list) <= set(quotes):  # only de-vig books covering the full market
             probs = devig([quotes[s] for s in sel_list], method=settings.devig_method)
             for s, p in zip(sel_list, probs):

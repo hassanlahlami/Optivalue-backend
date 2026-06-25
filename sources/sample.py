@@ -22,6 +22,8 @@ def _normalize_match(m: dict) -> list[MatchOdds]:
                 internal = "totals_goals"
             elif mkey == "totals_corners":
                 internal = "totals_corners"
+            elif mkey == "btts":
+                internal = "btts"
             else:
                 continue
             for oc in market["outcomes"]:

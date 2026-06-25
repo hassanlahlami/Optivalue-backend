@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS bets (
   bet_id INTEGER PRIMARY KEY AUTOINCREMENT, timestamp TEXT, match_id TEXT,
   league TEXT, market TEXT, selection TEXT, line REAL, model_prob REAL,
   fair_prob REAL, edge REAL, ev REAL, taken_odds REAL, book TEXT,
-  stake REAL, status TEXT, explanation TEXT,
+  stake REAL, status TEXT, explanation TEXT, placed INTEGER DEFAULT 0,
   FOREIGN KEY (match_id) REFERENCES matches(match_id)
 );
 CREATE TABLE IF NOT EXISTS clv (
@@ -47,6 +47,8 @@ def migrate(conn: sqlite3.Connection) -> None:
     cols = {r["name"] for r in conn.execute("PRAGMA table_info(bets)")}
     if "explanation" not in cols:
         conn.execute("ALTER TABLE bets ADD COLUMN explanation TEXT")
+    if "placed" not in cols:
+        conn.execute("ALTER TABLE bets ADD COLUMN placed INTEGER DEFAULT 0")
     mcols = {r["name"] for r in conn.execute("PRAGMA table_info(matches)")}
     if "weather" not in mcols:
         conn.execute("ALTER TABLE matches ADD COLUMN weather TEXT")

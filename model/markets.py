@@ -16,6 +16,11 @@ def one_x_two(M: np.ndarray) -> dict[str, float]:
     draw = float(np.trace(M))            # i == j
     return {"home": home, "draw": draw, "away": away}
 
+def btts(M: np.ndarray) -> dict[str, float]:
+    """Both teams to score: yes = P(home >= 1 and away >= 1)."""
+    yes = float(M[1:, 1:].sum())
+    return {"yes": yes, "no": 1.0 - yes}
+
 def over_under_total(M: np.ndarray, line: float) -> dict[str, float]:
     n_rows, n_cols = M.shape
     over = 0.0

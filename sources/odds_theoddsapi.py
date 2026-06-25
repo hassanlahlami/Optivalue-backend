@@ -28,6 +28,8 @@ class TheOddsAPIClient(BaseOddsClient):
             m.append("h2h")
         if "totals_goals" in self.markets:
             m.append("totals")
+        if "btts" in self.markets:
+            m.append("btts")
         return ",".join(m) or "h2h"
 
     def fetch_odds(self, league_keys: list[str]) -> list[MatchOdds]:

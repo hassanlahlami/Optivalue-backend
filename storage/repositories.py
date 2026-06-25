@@ -85,6 +85,9 @@ class BetRepo:
     def set_status(self, bet_id: int, status: str) -> None:
         self.conn.execute("UPDATE bets SET status=? WHERE bet_id=?", (status, bet_id))
         self.conn.commit()
+    def set_placed(self, bet_id: int, placed: bool) -> None:
+        self.conn.execute("UPDATE bets SET placed=? WHERE bet_id=?", (1 if placed else 0, bet_id))
+        self.conn.commit()
 
 class ClvRepo:
     def __init__(self, conn: sqlite3.Connection) -> None:
