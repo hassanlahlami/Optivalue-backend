@@ -1,4 +1,30 @@
-# Football Value-Bet Backend
+# Optivalue: Football Value-Bet Backend
+
+**A Python data and probabilistic-modelling pipeline with a REST API, built to find and validate
+pricing edges in football betting markets.** Think of it as a compact template for any
+"model vs. market" problem: fit a statistical model, compare it with market prices, and prove the edge
+with out-of-sample tests instead of short-run results.
+
+## Highlights
+
+- **Statistical modelling:** Dixon-Coles goals model (optionally on expected goals) and a team-strength
+  corners model, fitted with time decay and shared per league group.
+- **Market maths:** bookmaker margin removal (proportional, Shin or power), edge and expected-value
+  calculation, and line shopping across bookmakers.
+- **Honest validation:** out-of-sample backtests (Brier score, log-loss, calibration vs. a baseline),
+  walk-forward tuning, and **Closing Line Value** tracking as the real edge test, with a
+  "not yet reliable" verdict until enough bets are settled.
+- **Automation:** daily cycle (fetch, price, alert, capture closing prices, settle), built-in scheduler,
+  Telegram alerts, bankroll curve and Monte-Carlo risk-of-ruin.
+- **Engineering:** FastAPI service with OpenAPI docs, YAML configuration, SQLite storage, structured
+  logging, compliant and cached data collection (robots.txt, rate limits), and a test suite.
+- **Front end:** a Next.js dashboard in a separate repository,
+  [Optivalue-frontend](https://github.com/hassanlahlami/Optivalue-frontend).
+
+Need a data pipeline, a forecasting model or an analytics API built with the same discipline? See my
+[Upwork profile](https://www.upwork.com/freelancers/~015cce5800215d394a).
+
+---
 
 Computes our own model probabilities (Dixon-Coles goals + team-strength corners),
 compares them to de-vigged bookmaker odds, and flags positive-EV single bets with
@@ -71,5 +97,6 @@ Note: international home advantage is approximate (many World Cup games are at n
 Verify the live sport key with `GET /v4/sports` on The Odds API while the tournament is on.
 
 ## Frontend
-The UI is a SEPARATE Next.js app under `../frontend` that consumes this API. This
+The UI is a SEPARATE Next.js app that consumes this API:
+[Optivalue-frontend](https://github.com/hassanlahlami/Optivalue-frontend). This
 backend never renders HTML beyond the simple report files.
